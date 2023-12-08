@@ -37,7 +37,7 @@ $d_name=str_substr('<div>','的短评', '<div>'.$a_name);
 $d_name=str_substr('<div>','的影评', '<div>'.$a_name);
 }
 $a_name=str_substr('<span property="v:itemreviewed">','</span>', $data);
-
+$a_name = str_replace("&#39;", "'", $a_name);
 $vod_year=str_substr('<span class="year">(',')</span>', $data); //年代
 $txt1 = str_substr("导演</span>: <span class='attrs'>","</span></span><br/>", $data);
 $vod_director=preg_replace("/<a[^>]*>(.*)<\/a>/isU",'${1}',$txt1); //导演
@@ -50,11 +50,43 @@ $txt2 = str_substr("类型:</span> ","<br/>", $data);
 $vod_class=preg_replace("/<span[^>]*>(.*)<\/span>/isU",'${1}',$txt2); //分类
 $vod_area = str_substr("制片国家/地区:</span> ","<br/>", $data); //地区
 $vod_lang = str_substr("语言:</span> ","<br/>", $data); //语言
+$vod_tv = str_substr("IMDb:</span> ","<br>", $data); //IMDb
 $d_subname=str_substr("又名:</span> ","<br/>", $data);
 $vod_sub=str_replace("'","’",$d_subname); //别名
 $txt3 = str_substr("上映日期:</span> ","<br/>", $data);
+
 $vod_pubdate=preg_replace("/<span[^>]*>(.*)<\/span>/isU",'${1}',$txt3); //上映日期
-$vod_duration=str_substr('片长:</span> <span property="v:runtime" content="','">', $data); //片长
+
+
+preg_match('/<span property="v:initialReleaseDate" content=[^>]*>(.*?)<\/span>/', $data, $matches);
+$vod_pubdate = $matches[1]; //片长
+
+preg_match('/<span property="v:runtime" content=[^>]*>(.*?)<\/span>/', $data, $matches);
+$vod_duration = $matches[1]; //片长
+
+preg_match('/<title>(.*?)<\/title>/s', $data, $matches);
+$title = trim(str_replace([" (豆瓣)", "\n", "\r"], "",$matches[1])," ");
+$vod_englist = trim(str_replace($title, "", $a_name)," "); //英文名
+
+$pattern = '/<div id="related-pic" class="related-pic">(.*?)<\/div>/s';
+if (preg_match($pattern, $data, $matches)) {
+    $htmlcontent = $matches[1];
+    $pattern = '/<img\s+[^>]*src=["\'](.*?)["\'][^>]*>/i';
+    preg_match_all($pattern, $htmlcontent, $matches);
+    $vod_picture = $matches[1]; //影片图
+}
+
+$pattern = '/<div id="recommendations" class="">(.*?)<\/div>/s'; // s 模式用于跨行匹配
+if (preg_match($pattern, $data, $matches)) {
+    $htmlcontent = $matches[1]; // 提取匹配到的内容
+    preg_match_all('/<a\s+href=[\'"](.*?)[\'"].*?>/i', $htmlcontent, $matches);
+    foreach ($matches[1] as $url) {
+        $rel_ids[] = str_replace(['https://movie.douban.com/subject/','/?from=subject-page'], "", $url);
+    }
+    $rel_ids = implode(",", $rel_ids);
+}
+
+
 $d_content=str_substr('<span property="v:summary" class="">','</span>', $data);
 if($d_content==''){
 $d_content=str_substr('<span class="all hidden">','</span>', $data);
@@ -62,11 +94,11 @@ $d_content=str_substr('<span class="all hidden">','</span>', $data);
 $vod_content=str_replace("'","’",$d_content); //简介
 $vod_total=''; //集数
 if(strstr($vod_area,"中国")==true){
-	$vod_remarks='高清国语';
+    $vod_remarks='高清国语';
 }elseif(strstr($vod_area,"台湾")==true){
-	$vod_remarks='高清国语';
+    $vod_remarks='高清国语';
 }else{
-	$vod_remarks='高清中字';
+    $vod_remarks='高清中字';
 }
 }else{
 $vod_pic = str_substr('"image": "','",', $data);
@@ -87,7 +119,7 @@ $d_name=str_substr('<div>','的短评', '<div>'.$a_name);
 $d_name=str_substr('<div>','的影评', '<div>'.$a_name);
 }
 $a_name=str_substr('<span property="v:itemreviewed">','</span>', $data);
-
+$a_name = str_replace("&#39;", "'", $a_name);
 $vod_year=str_substr('<span class="year">(',')</span>', $data); //年代
 $txt1 = str_substr("导演</span>: <span class='attrs'>","</span></span><br/>", $data);
 $vod_director=preg_replace("/<a[^>]*>(.*)<\/a>/isU",'${1}',$txt1); //导演
@@ -99,19 +131,23 @@ $txt2 = str_substr("类型:</span> ","<br/>", $data);
 $vod_class=preg_replace("/<span[^>]*>(.*)<\/span>/isU",'${1}',$txt2); //分类
 $vod_area = str_substr("制片国家/地区:</span> ","<br/>", $data); //国家
 $vod_lang = str_substr("语言:</span> ","<br/>", $data); //语言
+$vod_tv = str_substr("IMDb:</span> ","<br>", $data); //IMDb
 $d_subname=str_substr("又名:</span> ","<br/>", $data);
 $vod_sub=str_replace("'","’",$d_subname); //别名
 
 $txt3 = str_substr("首播:</span> ","<br/>", $data);
 $vod_pubdate=preg_replace("/<span[^>]*>(.*)<\/span>/isU",'${1}',$txt3); //上映日期
 $vod_duration=str_substr('单集片长:</span> ','<br/>', $data); //片长
-$vod_duration=str_replace("分钟","",$vod_duration);
+preg_match('/<title>(.*?)<\/title>/s', $data, $matches);
+$title = trim(str_replace([" (豆瓣)", "\n", "\r"], "",$matches[1])," ");
+$vod_englist = trim(str_replace($title, "", $a_name)," ");
 $d_content=str_substr('<span property="v:summary" class="">','</span>', $data);
 if($d_content==''){
 $d_content=str_substr('<span class="all hidden">','</span>', $data);
 }
 $vod_content=str_replace("'","’",$d_content); //简介
 $vod_total=str_substr('集数:</span> ','<br/>', $data); //集数
+//preg_match("/(?<=\s|^)[A-Za-z\s\d.:'’·]+(?=$|\s)/u", html_entity_decode($a_name), $matches);
 $vod_remarks='总集数'.$vod_total;
 }
 if($vod_sub==''){
@@ -133,28 +169,27 @@ if($vod_content==''){
 $vod_content='内详';
 }
 if($d_name==''){
-$vurl='{"code":102,"auth":"请求失败请联系管理修复！","msg":"QQ211987543"}';
+$vurl='{"code":102,"auth":"错误消息！","msg":"失败"}';
 }else{
 $info['vod_name'] = $d_name;
-$info['vod_sub'] = str_replace("/", ",", $vod_sub).','.$a_name;
-preg_match('/(?<=\s|^)[A-Za-z\s\d.]+(?=$|\s)/u', $a_name, $matches);
-
-
-$info['vod_englist'] = trim($matches[0]," ");
+$info['vod_sub'] = str_replace(" / ", ",", $vod_sub);
+$info['vod_behind'] = trim($vod_englist," ");
 $info['vod_pic'] = $vod_pic;
 $info['vod_year'] = $vod_year;
-$info['vod_lang'] = $vod_lang;
-$info['vod_area'] = $vod_area;
-$info['vod_remarks'] = $vod_remarks;
+$info['vod_lang'] = str_replace(" / ", ",", $vod_lang);
+$info['vod_area'] = str_replace(" / ", ",", $vod_area);
+/*$info['vod_remarks'] = $vod_remarks; */
 $info['vod_total'] = $vod_total;
+$info['vod_tv'] = $vod_tv;
 $info['vod_serial'] = '';
 $info['vod_isend'] = 1;
-$info['vod_class'] = str_replace("/", ",", $vod_class);
+$info['vod_class'] = str_replace(" / ", ",", $vod_class);
 $info['vod_tag'] = '';
-$info['vod_actor'] = str_replace("/", ",", $vod_actor);
+/*$info['vod_actor'] = str_replace(" / ", ",", $vod_actor);*/
+$info['vod_actor'] = implode(",",array_slice(explode(",",str_replace(" / ", ",", $vod_actor)),0, 5)); 
 $info['vod_director'] = $vod_director;
-$info['vod_pubdate'] = str_replace("/", ",", $vod_pubdate);
-$info['vod_writer'] = str_replace("/", ",", $vod_writer);
+$info['vod_pubdate'] = str_replace(" / ", ",", $vod_pubdate);
+$info['vod_writer'] = str_replace(" / ", ",", $vod_writer);
 $info['vod_score'] = $vod_score;
 $info['vod_score_num'] = rand(100,1000);
 $info['vod_score_all'] = rand(200,500);
@@ -164,14 +199,28 @@ $info['vod_reurl'] = $vod_reurl;
 $info['vod_author'] = $vod_author;
 $info['vod_content'] = trim(cutstr_html($vod_content),"　");
 $info['vod_douban_id'] = $id;
-$jsondata = json_encode($info,JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
+$info['vod_rel_vod'] = $rel_ids;
+$info['vod_pic_screenshot'] = implode("$$$", $vod_picture);
+
+$vurl='({"code":1,"auth":"API数据接口！","msg":"成功",
+
+"data":'.json_encode($info,JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).'});';
+}
+file_put_contents($file,$vurl);
+}
+echo $callback.$vurl;
+/*
+$json = ['code'=>1,'auth'=>'API数据接口！','msg'=>'成功','data'=>$info];
+$jsondata = json_encode($json,JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
 }
 file_put_contents($file,$jsondata);
 }
-echo "(".$jsondata.")";
+echo "(".$jsondata.");";
+
+*/
 }else{
-echo $callback.'{"code":102,"auth":"请求失败请联系管理修复！",
-"msg":"提示：Wwww.2s0.Cn"}';
+echo $callback.'{"code":102,"auth":"错误！",
+"msg":"错误"}';
 }
 function baohan($str,$needle){
 $tmparray = explode($needle,$str);
@@ -187,10 +236,10 @@ function tugeturl($url){
          $ch = curl_init();
          $timeout = 30;
          curl_setopt ($ch,CURLOPT_URL,$url);
-         curl_setopt ($ch,CURLOPT_SSL_VERIFYPEER, false); // 跳过证书检查  
+         curl_setopt ($ch,CURLOPT_SSL_VERIFYPEER, false); // 跳过证书检查
          curl_setopt ($ch,CURLOPT_SSL_VERIFYHOST, true);
          curl_setopt ($ch,CURLOPT_RETURNTRANSFER,1);
-         curl_setopt ($ch,CURLOPT_REFERER, $url);  
+         curl_setopt ($ch,CURLOPT_REFERER, $url);
          curl_setopt ($ch,CURLOPT_CONNECTTIMEOUT,$timeout);
          $handles = curl_exec($ch);
          curl_close($ch);
@@ -200,14 +249,14 @@ function tugeturl($url){
   return $handles;
 }
 function geturl($url){
-     /*if(function_exists('curl_init')){
+     if(function_exists('curl_init')){
         $userAgent = 'Mozilla/5.0 (Linux; Android 5.0.2; Redmi Note 3 Build/LRX22G; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/45.0.2454.95 Mobile Safari/537.36  AliApp(DY/6.0.0) TBMovie/6.0.0 1080X1920';
         $referer = 'https://movie.douban.com/';
          $ch = curl_init();
          $timeout = 300;
          curl_setopt ($ch,CURLOPT_URL,$url);
          curl_setopt ($ch,CURLOPT_RETURNTRANSFER,1);
-         curl_setopt ($ch,CURLOPT_REFERER, $url);  
+         curl_setopt ($ch,CURLOPT_REFERER, $url);
          curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
          curl_setopt($ch, CURLOPT_REFERER, $referer);
          curl_setopt ($ch,CURLOPT_CONNECTTIMEOUT,$timeout);
@@ -215,12 +264,29 @@ function geturl($url){
          curl_close($ch);
       }else{
          $handles = @file_get_contents($url);
-      }*/
+      }
       $handles = @file_get_contents($url);
   return $handles;
 }
+
+/*
+function geturl($url){
+     if(function_exists('curl_init')){
+         $ch = curl_init();
+         $timeout = 30;
+         curl_setopt ($ch,CURLOPT_URL,$url);
+         curl_setopt ($ch,CURLOPT_RETURNTRANSFER,1);
+         curl_setopt ($ch,CURLOPT_REFERER, $url);  
+         curl_setopt ($ch,CURLOPT_CONNECTTIMEOUT,$timeout);
+         $handles = curl_exec($ch);
+         curl_close($ch);
+      }else{
+         $handles = @file_get_contents($url);
+      }
+  return $handles;
+}*/
 function getvrl($url){
-	$vurl = str_replace(array('"',"'"),array("'","‘"),$url);
+    $vurl = str_replace(array('"',"'"),array("'","‘"),$url);
     return $vurl;
 }
 function cutstr_html($string){
